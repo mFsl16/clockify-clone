@@ -8,11 +8,13 @@ package config
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/mFsl16/clockify-clone/controller"
 )
 
 // Injectors from injection.go:
 
-func NewApp() *echo.Echo {
+func NewApp() *controller.TaskControllerImpl {
 	echoEcho := echo.New()
-	return echoEcho
+	taskControllerImpl := controller.NewTaskController(echoEcho)
+	return taskControllerImpl
 }
