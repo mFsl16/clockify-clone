@@ -9,12 +9,18 @@ package config
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/mFsl16/clockify-clone/controller"
+	"github.com/mFsl16/clockify-clone/repository"
+	"github.com/mFsl16/clockify-clone/usecase"
 )
 
 // Injectors from injection.go:
 
 func NewApp() *controller.TaskControllerImpl {
 	echoEcho := echo.New()
-	taskControllerImpl := controller.NewTaskController(echoEcho)
+	database := repository.NewDatabase()
+	projectRepository := repository.NewProjectRepository()
+	taskRepository := repository.NewTaskRepository()
+	usecaseUsecase := usecase.NewUsecase(database, projectRepository, taskRepository)
+	taskControllerImpl := controller.NewTaskController(echoEcho, usecaseUsecase)
 	return taskControllerImpl
 }
