@@ -8,7 +8,7 @@ import (
 )
 
 type Usecase interface {
-	AddTask(ctx context.Context, task model.Task) model.Task
+	AddTask(ctx context.Context, task request.TaskRq) request.TaskRq
 	AddProject(ctx context.Context, project request.ProjectRq) request.ProjectRq
 	GetProjectById(ctx context.Context, id int) model.Project
 }

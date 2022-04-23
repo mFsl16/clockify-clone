@@ -18,7 +18,14 @@ func NewProjectRepository() ProjectRepository {
 
 func (repository *ProjectRepositoryImpl) Save(ctx context.Context, db gorm.DB, project request.ProjectRq) request.ProjectRq {
 
-	result := db.WithContext(ctx).Create(project)
+	// newProject := model.Project{
+	// 	Name:     project.Name,
+	// 	Access:   project.Access,
+	// 	Category: project.Category,
+	// 	Tracked:  project.Tracked,
+	// 	Progress: project.Progress,
+	// }
+	result := db.Table("projects").WithContext(ctx).Create(project)
 	if result.Error != nil {
 		panic("Error insert to database: " + result.Error.Error())
 	}

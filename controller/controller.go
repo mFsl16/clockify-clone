@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/request"
 	"github.com/mFsl16/clockify-clone/usecase"
 	"github.com/sirupsen/logrus"
@@ -34,7 +33,7 @@ func (controller *TaskControllerImpl) Hello(c echo.Context) error {
 
 func (controller *TaskControllerImpl) AddTask(c echo.Context) error {
 
-	requestBody := model.Task{}
+	requestBody := request.TaskRq{}
 	err := c.Bind(&requestBody)
 	if err != nil {
 		panic(err)

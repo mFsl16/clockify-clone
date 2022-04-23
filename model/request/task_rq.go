@@ -1,7 +1,6 @@
-package model
+package request
 
-type Task struct {
-	Id        int    `json: "id"; gorm: "primaryKey"; gorm: "autoIncrement"`
+type TaskRq struct {
 	Title     string `json: "title"`
 	Project   string `json: "project"`
 	Tags      string `json: "tags"`

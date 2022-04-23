@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/request"
@@ -22,7 +23,23 @@ func NewUsecase(db *repository.Database, projectRepo repository.ProjectRepositor
 	}
 }
 
-func (usecase *UsecaseImpl) AddTask(ctx context.Context, task model.Task) model.Task {
+func (usecase *UsecaseImpl) AddTask(ctx context.Context, task request.TaskRq) request.TaskRq {
+
+	startTime, errStartTime := time.Parse("2006-01-02 15:04:05", task.StartTime)
+
+	if errStartTime != nil {
+		panic("error parsing start time: " + errStartTime.Error())
+	}
+
+	endTime, errorEndTime := time.Parse("2006-01-02 15:04:05", task.EndTime)
+
+	if errorEndTime != nil {
+		panic("error parsing end time: " + errorEndTime.Error())
+	}
+
+	duration := endTime.UnixMilli() - startTime.UnixMilli()
+
+	task.Duration = duration
 
 	return usecase.TaskRepo.SaveTask(ctx, usecase.DB.Mysql, task)
 }
