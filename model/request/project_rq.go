@@ -1,7 +1,6 @@
-package model
+package request
 
-type Project struct {
-	Id       uint   `json: "id"; gorm: "primaryKey"; gorm"autoIncrement"`
+type ProjectRq struct {
 	Name     string `json: "name"`
 	Category string `json: "category"`
 	Tracked  int64  `json: "tracked"`

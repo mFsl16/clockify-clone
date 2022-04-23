@@ -11,7 +11,7 @@ type Database struct {
 
 func NewDatabase() *Database {
 
-	mysqlDsn := "user:secret@tcp(127.0.0.1:3306)/learn?charset=utf8mb4&parseTime=True&loc=Local"
+	mysqlDsn := "root:apaaja@tcp(127.0.0.1:3306)/learn?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(mysqlDsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect to db: " + err.Error())

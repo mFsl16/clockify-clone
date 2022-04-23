@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/mFsl16/clockify-clone/model"
+	"github.com/mFsl16/clockify-clone/model/request"
 	"github.com/mFsl16/clockify-clone/repository"
 )
 
@@ -26,6 +27,12 @@ func (usecase *UsecaseImpl) AddTask(ctx context.Context, task model.Task) model.
 	return usecase.TaskRepo.SaveTask(ctx, usecase.DB.Mysql, task)
 }
 
-func (usecase *UsecaseImpl) AddProject(ctx context.Context, project model.Project) model.Project {
+func (usecase *UsecaseImpl) AddProject(ctx context.Context, project request.ProjectRq) request.ProjectRq {
+
 	return usecase.ProjectRepo.Save(ctx, usecase.DB.Mysql, project)
+}
+
+func (usecase *UsecaseImpl) GetProjectById(ctx context.Context, id int) model.Project {
+
+	return usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
 }
