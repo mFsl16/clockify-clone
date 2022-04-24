@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/request"
 	"gorm.io/gorm"
 )
@@ -24,4 +25,16 @@ func (repository *TaskRepositoryImpl) SaveTask(ctx context.Context, db gorm.DB, 
 
 	return task
 
+}
+
+func (repository *TaskRepositoryImpl) GetTaskById(ctx context.Context, db gorm.DB, id int) model.Task {
+
+	task := model.Task{}
+	result := db.Find(&task, id)
+
+	if result.Error != nil {
+		panic("error find task: " + result.Error.Error())
+	}
+
+	return task
 }

@@ -53,3 +53,8 @@ func (usecase *UsecaseImpl) GetProjectById(ctx context.Context, id int) model.Pr
 
 	return usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
 }
+
+func (usecase *UsecaseImpl) GetTaskById(ctx context.Context, id int) model.Task {
+
+	return usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
+}
