@@ -58,3 +58,68 @@ func (usecase *UsecaseImpl) GetTaskById(ctx context.Context, id int) model.Task 
 
 	return usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
 }
+
+func (usecase *UsecaseImpl) GetAllProject(ctx context.Context) []model.Project {
+
+	return usecase.ProjectRepo.GetAllProject(ctx, usecase.DB.Mysql)
+}
+
+func (usecase *UsecaseImpl) GetAllTasks(ctx context.Context) []model.Task {
+
+	return usecase.TaskRepo.GetAllTasks(ctx, usecase.DB.Mysql)
+}
+
+func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate request.TaskRq) model.Task {
+
+	task := usecase.GetTaskById(ctx, id)
+
+	if len(taskUpdate.Date) > 0 {
+		dateUpdate, err := time.Parse("2006-01-02 15:04:05", taskUpdate.Date)
+		task.Date = dateUpdate
+		if err != nil {
+			panic("Error parse date: " + err.Error())
+		}
+	}
+
+	if len(taskUpdate.StartTime) > 0 {
+		startTimeUpdate, errStartTime := time.Parse("2006-01-02 15:04:05", taskUpdate.StartTime)
+		task.StartTime = startTimeUpdate
+		if errStartTime != nil {
+			panic("Error parse date: " + errStartTime.Error())
+		}
+	}
+
+	if len(taskUpdate.EndTime) > 0 {
+		endDateUpdate, errEndDate := time.Parse("2006-01-02 15:04:05", taskUpdate.EndTime)
+		task.EndTime = endDateUpdate
+		if errEndDate != nil {
+			panic("Error parse date: " + errEndDate.Error())
+		}
+	}
+
+	if len(taskUpdate.Title) > 0 && task.Title != taskUpdate.Title {
+		task.Title = taskUpdate.Project
+	}
+
+	if len(task.Project) > 0 && task.Project != taskUpdate.Project {
+		task.Project = taskUpdate.Project
+	}
+
+	if task.Billable != taskUpdate.Billable {
+		task.Billable = taskUpdate.Billable
+	}
+
+	if task.Duration != taskUpdate.Duration {
+		task.Duration = taskUpdate.Duration
+	}
+
+	if len(task.Project) > 0 && task.Project != taskUpdate.Project {
+		task.Project = taskUpdate.Project
+	}
+
+	if len(task.Tags) > 0 && task.Tags != taskUpdate.Tags {
+		task.Tags = taskUpdate.Tags
+	}
+
+	return usecase.TaskRepo.UpdateTask(ctx, usecase.DB.Mysql, task)
+}

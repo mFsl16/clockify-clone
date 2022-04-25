@@ -11,10 +11,10 @@ import (
 	"github.com/mFsl16/clockify-clone/usecase"
 )
 
-func NewApp() *controller.TaskControllerImpl {
+func NewApp() *controller.Controller {
 	wire.Build(
 		echo.New,
-		controller.NewTaskController,
+		controller.NewController,
 		usecase.NewUsecase,
 		repository.NewDatabase,
 		repository.NewProjectRepository,

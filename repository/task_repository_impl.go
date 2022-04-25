@@ -17,10 +17,10 @@ func NewTaskRepository() TaskRepository {
 
 func (repository *TaskRepositoryImpl) SaveTask(ctx context.Context, db gorm.DB, task request.TaskRq) request.TaskRq {
 
-	result := db.Table("tasks").WithContext(ctx).Create(task)
+	query := db.Table("tasks").WithContext(ctx).Create(task)
 
-	if result.Error != nil {
-		panic("Error save task to database: " + result.Error.Error())
+	if query.Error != nil {
+		panic("Error save task to database: " + query.Error.Error())
 	}
 
 	return task
@@ -30,10 +30,32 @@ func (repository *TaskRepositoryImpl) SaveTask(ctx context.Context, db gorm.DB, 
 func (repository *TaskRepositoryImpl) GetTaskById(ctx context.Context, db gorm.DB, id int) model.Task {
 
 	task := model.Task{}
-	result := db.Find(&task, id)
+	query := db.Find(&task, id)
 
-	if result.Error != nil {
-		panic("error find task: " + result.Error.Error())
+	if query.Error != nil {
+		panic("error find task: " + query.Error.Error())
+	}
+
+	return task
+}
+
+func (repository *TaskRepositoryImpl) GetAllTasks(ctx context.Context, db gorm.DB) []model.Task {
+
+	tasks := []model.Task{}
+	query := db.Find(&tasks)
+
+	if query.Error != nil {
+		panic("error get task: " + query.Error.Error())
+	}
+
+	return tasks
+}
+
+func (repository *TaskRepositoryImpl) UpdateTask(ctx context.Context, db gorm.DB, task model.Task) model.Task {
+
+	query := db.Save(&task)
+	if query != nil {
+		panic("Error update task: " + query.Error.Error())
 	}
 
 	return task

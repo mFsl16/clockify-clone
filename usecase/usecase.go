@@ -12,4 +12,7 @@ type Usecase interface {
 	AddProject(ctx context.Context, project request.ProjectRq) request.ProjectRq
 	GetProjectById(ctx context.Context, id int) model.Project
 	GetTaskById(ctx context.Context, id int) model.Task
+	GetAllProject(ctx context.Context) []model.Project
+	GetAllTasks(ctx context.Context) []model.Task
+	UpdateTask(ctx context.Context, id int, taskUpdate request.TaskRq) model.Task
 }
