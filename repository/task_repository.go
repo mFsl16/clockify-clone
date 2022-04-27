@@ -13,4 +13,5 @@ type TaskRepository interface {
 	GetTaskById(ctx context.Context, db gorm.DB, id int) model.Task
 	GetAllTasks(ctx context.Context, db gorm.DB) []model.Task
 	UpdateTask(ctx context.Context, db gorm.DB, task model.Task) model.Task
+	DeleteTask(ctx context.Context, mysql gorm.DB, id int) bool
 }

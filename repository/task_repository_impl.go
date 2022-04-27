@@ -60,3 +60,19 @@ func (repository *TaskRepositoryImpl) UpdateTask(ctx context.Context, db gorm.DB
 
 	return task
 }
+
+func (repository *TaskRepositoryImpl) DeleteTask(ctx context.Context, mysql gorm.DB, id int) bool {
+
+	task := model.Task{}
+	query := mysql.Delete(&task, id)
+
+	if query.Error != nil {
+		panic("error delete task: " + query.Error.Error())
+	}
+
+	if query.RowsAffected == 0 {
+		return false
+	}
+
+	return true
+}

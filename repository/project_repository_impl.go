@@ -49,3 +49,30 @@ func (repository *ProjectRepositoryImpl) GetAllProject(ctx context.Context, db g
 
 	return projects
 }
+
+func (repository *ProjectRepositoryImpl) UpdateProject(ctx context.Context, db gorm.DB, project model.Project) model.Project {
+
+	query := db.Save(&project)
+
+	if query.Error != nil {
+		panic("error update project: " + query.Error.Error())
+	}
+
+	return project
+}
+
+func (repository *ProjectRepositoryImpl) DeleteProject(ctx context.Context, db gorm.DB, id int) bool {
+
+	project := model.Project{}
+	query := db.Delete(&project, id)
+
+	if query.Error != nil {
+		panic("error delete project: " + query.Error.Error())
+	}
+
+	if query.RowsAffected == 0 {
+		return false
+	}
+
+	return true
+}

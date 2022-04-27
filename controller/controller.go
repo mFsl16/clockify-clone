@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -25,6 +24,9 @@ func (controller *Controller) Handle() {
 	controller.E.GET("/v1/project", controller.GetAllProject)
 	controller.E.GET("/v1/task", controller.GetAllTasks)
 	controller.E.PUT("/v1/task/:id", controller.UpdateTask)
+	controller.E.PUT("/v1/project/:id", controller.UpdateProject)
+	controller.E.DELETE("/v1/task/:id", controller.DeleteTask)
+	controller.E.DELETE("/v1/project/:id", controller.DeleteProject)
 }
 
 func NewController(e *echo.Echo, usecase usecase.Usecase) *Controller {
@@ -113,12 +115,52 @@ func (controller *Controller) UpdateTask(c echo.Context) error {
 	id, errBindParam := strconv.Atoi(c.Param("id"))
 
 	if errBindRq != nil || errBindParam != nil {
-		panic("error bind request: " + errBindRq.Error())
+		panic("error bind request: " + errBindRq.Error() + " " + errBindParam.Error())
 	}
-
-	fmt.Println(taskUpdate)
 
 	taskResult := controller.U.UpdateTask(c.Request().Context(), id, taskUpdate)
 
 	return c.JSON(http.StatusOK, taskResult)
+}
+
+func (controller *Controller) UpdateProject(c echo.Context) error {
+
+	projectUpdate := request.ProjectRq{}
+	errBindRq := c.Bind(&projectUpdate)
+
+	id, errBindParam := strconv.Atoi(c.Param("id"))
+
+	if errBindParam != nil || errBindRq != nil {
+		panic("error bind request: " + errBindRq.Error() + " " + errBindParam.Error())
+	}
+
+	projectResult := controller.U.UpdateProject(c.Request().Context(), id, projectUpdate)
+
+	return c.JSON(http.StatusOK, projectResult)
+}
+
+func (controller *Controller) DeleteTask(c echo.Context) error {
+
+	id, errBindParam := strconv.Atoi(c.Param("id"))
+
+	if errBindParam != nil {
+		panic("error binding param: " + errBindParam.Error())
+	}
+
+	deleteTask := controller.U.DeleteTask(c.Request().Context(), id)
+
+	return c.JSON(http.StatusOK, deleteTask)
+}
+
+func (controller *Controller) DeleteProject(c echo.Context) error {
+
+	id, errBindParam := strconv.Atoi(c.Param("id"))
+
+	if errBindParam != nil {
+		panic("error bind param: " + errBindParam.Error())
+	}
+
+	deleteProject := controller.U.DeleteProject(c.Request().Context(), id)
+
+	return c.JSON(http.StatusOK, deleteProject)
 }
