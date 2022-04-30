@@ -15,3 +15,10 @@ func (rs CommonRs) SetSuccess(data interface{}) CommonRs {
 		Data:    data,
 	}
 }
+
+func (rs CommonRs) SetFailed(message interface{}) CommonRs {
+	return CommonRs{
+		Status:  http.StatusBadRequest,
+		Message: message,
+	}
+}

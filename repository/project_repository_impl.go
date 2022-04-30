@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"strconv"
-
 	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/request"
 	"gorm.io/gorm"
@@ -16,26 +14,26 @@ func NewProjectRepository() ProjectRepository {
 	return &ProjectRepositoryImpl{}
 }
 
-func (repository *ProjectRepositoryImpl) Save(ctx context.Context, db gorm.DB, project request.ProjectRq) request.ProjectRq {
+func (repository *ProjectRepositoryImpl) Save(ctx context.Context, db gorm.DB, project request.ProjectRq) (request.ProjectRq, error) {
 
 	result := db.Table("projects").WithContext(ctx).Create(project)
 	if result.Error != nil {
-		panic("Error insert to database: " + result.Error.Error())
+		return project, result.Error
 	}
 
-	return project
+	return project, nil
 }
 
-func (repository *ProjectRepositoryImpl) GetProjectById(ctx context.Context, db gorm.DB, id int) model.Project {
+func (repository *ProjectRepositoryImpl) GetProjectById(ctx context.Context, db gorm.DB, id int) (model.Project, error) {
 
 	project := model.Project{}
 	result := db.Find(&project, id)
 
 	if result.Error != nil {
-		panic("Error get project by Id: " + strconv.Itoa(id) + " | message: " + result.Error.Error())
+		return project, result.Error
 	}
 
-	return project
+	return project, nil
 }
 
 func (repository *ProjectRepositoryImpl) GetAllProject(ctx context.Context, db gorm.DB) []model.Project {
@@ -50,15 +48,15 @@ func (repository *ProjectRepositoryImpl) GetAllProject(ctx context.Context, db g
 	return projects
 }
 
-func (repository *ProjectRepositoryImpl) UpdateProject(ctx context.Context, db gorm.DB, project model.Project) model.Project {
+func (repository *ProjectRepositoryImpl) UpdateProject(ctx context.Context, db gorm.DB, project model.Project) (model.Project, error) {
 
 	query := db.Save(&project)
 
 	if query.Error != nil {
-		panic("error update project: " + query.Error.Error())
+		return model.Project{}, query.Error
 	}
 
-	return project
+	return project, nil
 }
 
 func (repository *ProjectRepositoryImpl) DeleteProject(ctx context.Context, db gorm.DB, id int) bool {

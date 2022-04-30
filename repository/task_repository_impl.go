@@ -27,16 +27,16 @@ func (repository *TaskRepositoryImpl) SaveTask(ctx context.Context, db gorm.DB, 
 
 }
 
-func (repository *TaskRepositoryImpl) GetTaskById(ctx context.Context, db gorm.DB, id int) model.Task {
+func (repository *TaskRepositoryImpl) GetTaskById(ctx context.Context, db gorm.DB, id int) (model.Task, error) {
 
 	task := model.Task{}
 	query := db.Find(&task, id)
 
 	if query.Error != nil {
-		panic("error find task: " + query.Error.Error())
+		return task, query.Error
 	}
 
-	return task
+	return task, nil
 }
 
 func (repository *TaskRepositoryImpl) GetAllTasks(ctx context.Context, db gorm.DB) []model.Task {
@@ -51,14 +51,15 @@ func (repository *TaskRepositoryImpl) GetAllTasks(ctx context.Context, db gorm.D
 	return tasks
 }
 
-func (repository *TaskRepositoryImpl) UpdateTask(ctx context.Context, db gorm.DB, task model.Task) model.Task {
+func (repository *TaskRepositoryImpl) UpdateTask(ctx context.Context, db gorm.DB, task model.Task) (model.Task, error) {
 
 	query := db.Save(&task)
-	if query != nil {
-		panic("Error update task: " + query.Error.Error())
+
+	if query.Error != nil {
+		return model.Task{}, query.Error
 	}
 
-	return task
+	return task, nil
 }
 
 func (repository *TaskRepositoryImpl) DeleteTask(ctx context.Context, mysql gorm.DB, id int) bool {

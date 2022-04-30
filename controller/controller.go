@@ -1,13 +1,12 @@
 package controller
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/labstack/echo/v4"
 	"github.com/mFsl16/clockify-clone/model/request"
 	"github.com/mFsl16/clockify-clone/usecase"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"strconv"
 )
 
 type Controller struct {
@@ -30,10 +29,14 @@ func (controller *Controller) Handle() {
 }
 
 func NewController(e *echo.Echo, usecase usecase.Usecase) *Controller {
-	return &Controller{
+	controller := Controller{
 		E: e,
 		U: usecase,
 	}
+
+	//controller.E.Use(middleware.Recover())
+
+	return &controller
 }
 
 func (controller *Controller) Hello(c echo.Context) error {
@@ -114,6 +117,12 @@ func (controller *Controller) UpdateTask(c echo.Context) error {
 
 	id, errBindParam := strconv.Atoi(c.Param("id"))
 
+	logrus.WithFields(
+		logrus.Fields{
+			"requestbody": taskUpdate,
+			"id":          id,
+		}).Info("[RECEIVE REQUEST]")
+
 	if errBindRq != nil || errBindParam != nil {
 		panic("error bind request: " + errBindRq.Error() + " " + errBindParam.Error())
 	}
@@ -133,6 +142,11 @@ func (controller *Controller) UpdateProject(c echo.Context) error {
 	if errBindParam != nil || errBindRq != nil {
 		panic("error bind request: " + errBindRq.Error() + " " + errBindParam.Error())
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"requestbody": projectUpdate,
+		"id":          id,
+	}).Info("[RECEIVE REQUEST]")
 
 	projectResult := controller.U.UpdateProject(c.Request().Context(), id, projectUpdate)
 

@@ -2,12 +2,12 @@ package usecase
 
 import (
 	"context"
+	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/response"
-	"net/http"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"time"
 
-	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/request"
 	"github.com/mFsl16/clockify-clone/repository"
 )
@@ -31,8 +31,7 @@ func (usecase *UsecaseImpl) AddTask(ctx context.Context, task request.TaskRq) re
 
 	defer func() {
 		if r := recover(); r != nil {
-			commonRs.Status = http.StatusBadRequest
-			commonRs.Message = r
+			commonRs = commonRs.SetFailed(r)
 		}
 	}()
 
@@ -54,40 +53,94 @@ func (usecase *UsecaseImpl) AddTask(ctx context.Context, task request.TaskRq) re
 
 	saveTask := usecase.TaskRepo.SaveTask(ctx, usecase.DB.Mysql, task)
 
-	commonRs.SetSuccess(saveTask)
+	commonRs = commonRs.SetSuccess(saveTask)
 
 	return commonRs
 
 }
 
-func (usecase *UsecaseImpl) AddProject(ctx context.Context, project request.ProjectRq) request.ProjectRq {
+func (usecase *UsecaseImpl) AddProject(ctx context.Context, project request.ProjectRq) response.CommonRs {
 
-	return usecase.ProjectRepo.Save(ctx, usecase.DB.Mysql, project)
+	commonRs := response.CommonRs{}
+
+	defer func() {
+		if r := recover(); r != nil {
+			commonRs = commonRs.SetFailed(r)
+		}
+	}()
+
+	saveProject, err := usecase.ProjectRepo.Save(ctx, usecase.DB.Mysql, project)
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	commonRs = commonRs.SetSuccess(saveProject)
+
+	return commonRs
 }
 
-func (usecase *UsecaseImpl) GetProjectById(ctx context.Context, id int) model.Project {
+func (usecase *UsecaseImpl) GetProjectById(ctx context.Context, id int) response.CommonRs {
 
-	return usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
+	commonRs := response.CommonRs{}
+
+	project, errGetProject := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
+
+	if errGetProject != nil {
+		return commonRs.SetFailed(errGetProject.Error())
+	}
+
+	if (model.Project{}) == project {
+		return commonRs.SetFailed("project not found")
+	}
+
+	return commonRs.SetSuccess(project)
+
 }
 
-func (usecase *UsecaseImpl) GetTaskById(ctx context.Context, id int) model.Task {
+func (usecase *UsecaseImpl) GetTaskById(ctx context.Context, id int) response.CommonRs {
 
-	return usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
+	commonRs := response.CommonRs{}
+
+	getTask, errGetTask := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
+
+	if errGetTask != nil {
+		return commonRs.SetFailed(errGetTask.Error())
+	}
+
+	if (model.Task{}) == getTask {
+		return commonRs.SetFailed("task not found")
+	}
+
+	return commonRs.SetSuccess(getTask)
 }
 
-func (usecase *UsecaseImpl) GetAllProject(ctx context.Context) []model.Project {
-
-	return usecase.ProjectRepo.GetAllProject(ctx, usecase.DB.Mysql)
+func (usecase *UsecaseImpl) GetAllProject(ctx context.Context) response.CommonRs {
+	commonRs := response.CommonRs{}
+	commonRs = commonRs.SetSuccess(usecase.ProjectRepo.GetAllProject(ctx, usecase.DB.Mysql))
+	return commonRs
 }
 
-func (usecase *UsecaseImpl) GetAllTasks(ctx context.Context) []model.Task {
-
-	return usecase.TaskRepo.GetAllTasks(ctx, usecase.DB.Mysql)
+func (usecase *UsecaseImpl) GetAllTasks(ctx context.Context) response.CommonRs {
+	commonRs := response.CommonRs{}
+	commonRs = commonRs.SetSuccess(usecase.TaskRepo.GetAllTasks(ctx, usecase.DB.Mysql))
+	return commonRs
 }
 
-func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate request.TaskRq) model.Task {
+func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate request.TaskRq) response.CommonRs {
 
-	task := usecase.GetTaskById(ctx, id)
+	commonRs := response.CommonRs{}
+	task, errGetTask := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
+
+	defer func() {
+		if r := recover(); r != nil {
+			commonRs = commonRs.SetFailed(r)
+		}
+	}()
+
+	if errGetTask != nil {
+		panic(errGetTask.Error())
+	}
 
 	if task == (model.Task{}) {
 		panic("task not found")
@@ -137,16 +190,42 @@ func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate r
 		task.Project = taskUpdate.Project
 	}
 
-	if len(task.Tags) > 0 && task.Tags != taskUpdate.Tags {
+	if len(taskUpdate.Tags) > 0 && task.Tags != taskUpdate.Tags {
 		task.Tags = taskUpdate.Tags
 	}
 
-	return usecase.TaskRepo.UpdateTask(ctx, usecase.DB.Mysql, task)
+	logrus.WithFields(
+		logrus.Fields{
+			"task": task,
+		}).Info("[START UPDATE TASK]")
+	updateTask, errUpdateTask := usecase.TaskRepo.UpdateTask(ctx, usecase.DB.Mysql, task)
+	logrus.WithFields(
+		logrus.Fields{
+			"task": updateTask,
+		}).Info("[COMPLETE UPDATE TASK]")
+
+	if errUpdateTask != nil {
+		panic(errUpdateTask)
+	}
+
+	commonRs = commonRs.SetSuccess(updateTask)
+	return commonRs
 }
 
-func (usecase *UsecaseImpl) UpdateProject(ctx context.Context, id int, project request.ProjectRq) model.Project {
+func (usecase *UsecaseImpl) UpdateProject(ctx context.Context, id int, project request.ProjectRq) response.CommonRs {
 
-	existProject := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
+	commonRs := response.CommonRs{}
+	existProject, err := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
+
+	defer func() {
+		if r := recover(); r != nil {
+			commonRs = commonRs.SetFailed(r)
+		}
+	}()
+
+	if err != nil {
+		panic(err)
+	}
 
 	if existProject == (model.Project{}) {
 		panic("project not found")
@@ -172,12 +251,32 @@ func (usecase *UsecaseImpl) UpdateProject(ctx context.Context, id int, project r
 		existProject.Tracked = project.Tracked
 	}
 
-	return usecase.ProjectRepo.UpdateProject(ctx, usecase.DB.Mysql, existProject)
+	updateProject, err := usecase.ProjectRepo.UpdateProject(ctx, usecase.DB.Mysql, existProject)
+
+	if err != nil {
+		panic(err)
+	}
+
+	commonRs = commonRs.SetSuccess(updateProject)
+
+	return commonRs
 }
 
-func (usecase *UsecaseImpl) DeleteTask(ctx context.Context, id int) string {
+func (usecase *UsecaseImpl) DeleteTask(ctx context.Context, id int) response.CommonRs {
 
-	taskExist := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
+	commonRs := response.CommonRs{}
+
+	defer func() {
+		if r := recover(); r != nil {
+			commonRs = commonRs.SetFailed(r)
+		}
+	}()
+
+	taskExist, err := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
+
+	if err != nil {
+		panic(err)
+	}
 
 	if (model.Task{}) == taskExist {
 		panic("task with id: " + strconv.Itoa(id) + " not found")
@@ -186,15 +285,29 @@ func (usecase *UsecaseImpl) DeleteTask(ctx context.Context, id int) string {
 	isDeleteSucces := usecase.TaskRepo.DeleteTask(ctx, usecase.DB.Mysql, id)
 
 	if !isDeleteSucces {
-		return "Failed delete task unknown error"
+		commonRs = commonRs.SetFailed("Failed delete task unknown error")
 	}
 
-	return "success delete task"
+	commonRs = commonRs.SetSuccess("success delete task")
+
+	return commonRs
 }
 
-func (usecase *UsecaseImpl) DeleteProject(ctx context.Context, id int) string {
+func (usecase *UsecaseImpl) DeleteProject(ctx context.Context, id int) response.CommonRs {
 
-	projectExist := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
+	commonRs := response.CommonRs{}
+
+	defer func() {
+		if r := recover(); r != nil {
+			commonRs = commonRs.SetFailed(r)
+		}
+	}()
+
+	projectExist, err := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
+
+	if err != nil {
+		panic(err)
+	}
 
 	if (model.Project{}) == projectExist {
 		panic("project not found")
@@ -203,8 +316,10 @@ func (usecase *UsecaseImpl) DeleteProject(ctx context.Context, id int) string {
 	isDeleteSuccess := usecase.ProjectRepo.DeleteProject(ctx, usecase.DB.Mysql, id)
 
 	if !isDeleteSuccess {
-		return "failed delete project: unknown error"
+		panic("failed delete project: unknown error")
 	}
 
-	return "success delete project"
+	commonRs = commonRs.SetSuccess("success delete project")
+
+	return commonRs
 }
