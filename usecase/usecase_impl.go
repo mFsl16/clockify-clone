@@ -2,9 +2,11 @@ package usecase
 
 import (
 	"context"
+	"github.com/mFsl16/clockify-clone/exception"
 	"github.com/mFsl16/clockify-clone/model"
 	"github.com/mFsl16/clockify-clone/model/response"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -29,22 +31,16 @@ func NewUsecase(db *repository.Database, projectRepo repository.ProjectRepositor
 func (usecase *UsecaseImpl) AddTask(ctx context.Context, task request.TaskRq) response.CommonRs {
 	commonRs := response.CommonRs{}
 
-	defer func() {
-		if r := recover(); r != nil {
-			commonRs = commonRs.SetFailed(r)
-		}
-	}()
-
 	startTime, errStartTime := time.Parse("2006-01-02 15:04:05", task.StartTime)
 
 	if errStartTime != nil {
-		panic("error parsing start time: " + errStartTime.Error())
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", "error parsing start time: "+errStartTime.Error()))
 	}
 
 	endTime, errorEndTime := time.Parse("2006-01-02 15:04:05", task.EndTime)
 
 	if errorEndTime != nil {
-		panic("error parsing end time: " + errorEndTime.Error())
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", "error parsing end time: "+errorEndTime.Error()))
 	}
 
 	duration := endTime.UnixMilli() - startTime.UnixMilli()
@@ -56,23 +52,16 @@ func (usecase *UsecaseImpl) AddTask(ctx context.Context, task request.TaskRq) re
 	commonRs = commonRs.SetSuccess(saveTask)
 
 	return commonRs
-
 }
 
 func (usecase *UsecaseImpl) AddProject(ctx context.Context, project request.ProjectRq) response.CommonRs {
 
 	commonRs := response.CommonRs{}
 
-	defer func() {
-		if r := recover(); r != nil {
-			commonRs = commonRs.SetFailed(r)
-		}
-	}()
-
 	saveProject, err := usecase.ProjectRepo.Save(ctx, usecase.DB.Mysql, project)
 
 	if err != nil {
-		panic(err.Error())
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", err.Error()))
 	}
 
 	commonRs = commonRs.SetSuccess(saveProject)
@@ -87,11 +76,19 @@ func (usecase *UsecaseImpl) GetProjectById(ctx context.Context, id int) response
 	project, errGetProject := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
 
 	if errGetProject != nil {
-		return commonRs.SetFailed(errGetProject.Error())
+		panic(exception.CommonException{
+			HttpStatus: http.StatusInternalServerError,
+			Code:       "99",
+			Message:    errGetProject.Error(),
+		})
 	}
 
 	if (model.Project{}) == project {
-		return commonRs.SetFailed("project not found")
+		panic(exception.CommonException{
+			HttpStatus: http.StatusNotFound,
+			Code:       "01",
+			Message:    "project not found",
+		})
 	}
 
 	return commonRs.SetSuccess(project)
@@ -105,11 +102,11 @@ func (usecase *UsecaseImpl) GetTaskById(ctx context.Context, id int) response.Co
 	getTask, errGetTask := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
 
 	if errGetTask != nil {
-		return commonRs.SetFailed(errGetTask.Error())
+		exception.NewCommonException(http.StatusInternalServerError, "99", errGetTask.Error())
 	}
 
 	if (model.Task{}) == getTask {
-		return commonRs.SetFailed("task not found")
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", "task not found"))
 	}
 
 	return commonRs.SetSuccess(getTask)
@@ -132,25 +129,19 @@ func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate r
 	commonRs := response.CommonRs{}
 	task, errGetTask := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
 
-	defer func() {
-		if r := recover(); r != nil {
-			commonRs = commonRs.SetFailed(r)
-		}
-	}()
-
 	if errGetTask != nil {
-		panic(errGetTask.Error())
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", errGetTask.Error()))
 	}
 
 	if task == (model.Task{}) {
-		panic("task not found")
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", "task not found"))
 	}
 
 	if len(taskUpdate.Date) > 0 {
 		dateUpdate, err := time.Parse("2006-01-02 15:04:05", taskUpdate.Date)
 		task.Date = dateUpdate
 		if err != nil {
-			panic("Error parse date: " + err.Error())
+			panic(exception.NewCommonException(http.StatusBadRequest, "01", "Error parse date: "+err.Error()))
 		}
 	}
 
@@ -158,7 +149,7 @@ func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate r
 		startTimeUpdate, errStartTime := time.Parse("2006-01-02 15:04:05", taskUpdate.StartTime)
 		task.StartTime = startTimeUpdate
 		if errStartTime != nil {
-			panic("Error parse date: " + errStartTime.Error())
+			panic(exception.NewCommonException(http.StatusBadRequest, "01", "Error parse date: "+errStartTime.Error()))
 		}
 	}
 
@@ -166,7 +157,7 @@ func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate r
 		endDateUpdate, errEndDate := time.Parse("2006-01-02 15:04:05", taskUpdate.EndTime)
 		task.EndTime = endDateUpdate
 		if errEndDate != nil {
-			panic("Error parse date: " + errEndDate.Error())
+			panic(exception.NewCommonException(http.StatusBadRequest, "01", "Error parse date: "+errEndDate.Error()))
 		}
 	}
 
@@ -205,7 +196,7 @@ func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate r
 		}).Info("[COMPLETE UPDATE TASK]")
 
 	if errUpdateTask != nil {
-		panic(errUpdateTask)
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", errUpdateTask.Error()))
 	}
 
 	commonRs = commonRs.SetSuccess(updateTask)
@@ -215,20 +206,15 @@ func (usecase *UsecaseImpl) UpdateTask(ctx context.Context, id int, taskUpdate r
 func (usecase *UsecaseImpl) UpdateProject(ctx context.Context, id int, project request.ProjectRq) response.CommonRs {
 
 	commonRs := response.CommonRs{}
+
 	existProject, err := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
 
-	defer func() {
-		if r := recover(); r != nil {
-			commonRs = commonRs.SetFailed(r)
-		}
-	}()
-
 	if err != nil {
-		panic(err)
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", err.Error()))
 	}
 
 	if existProject == (model.Project{}) {
-		panic("project not found")
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", "project not found"))
 	}
 
 	if len(project.Name) > 0 && project.Name != existProject.Name {
@@ -254,7 +240,7 @@ func (usecase *UsecaseImpl) UpdateProject(ctx context.Context, id int, project r
 	updateProject, err := usecase.ProjectRepo.UpdateProject(ctx, usecase.DB.Mysql, existProject)
 
 	if err != nil {
-		panic(err)
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", err.Error()))
 	}
 
 	commonRs = commonRs.SetSuccess(updateProject)
@@ -266,26 +252,20 @@ func (usecase *UsecaseImpl) DeleteTask(ctx context.Context, id int) response.Com
 
 	commonRs := response.CommonRs{}
 
-	defer func() {
-		if r := recover(); r != nil {
-			commonRs = commonRs.SetFailed(r)
-		}
-	}()
-
 	taskExist, err := usecase.TaskRepo.GetTaskById(ctx, usecase.DB.Mysql, id)
 
 	if err != nil {
-		panic(err)
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", err.Error()))
 	}
 
 	if (model.Task{}) == taskExist {
-		panic("task with id: " + strconv.Itoa(id) + " not found")
+		panic(exception.NewCommonException(http.StatusBadRequest, "01", "task with id: "+strconv.Itoa(id)+" not found"))
 	}
 
 	isDeleteSucces := usecase.TaskRepo.DeleteTask(ctx, usecase.DB.Mysql, id)
 
 	if !isDeleteSucces {
-		commonRs = commonRs.SetFailed("Failed delete task unknown error")
+		commonRs = commonRs.SetFailed(400, "Failed delete task unknown error")
 	}
 
 	commonRs = commonRs.SetSuccess("success delete task")
@@ -297,16 +277,10 @@ func (usecase *UsecaseImpl) DeleteProject(ctx context.Context, id int) response.
 
 	commonRs := response.CommonRs{}
 
-	defer func() {
-		if r := recover(); r != nil {
-			commonRs = commonRs.SetFailed(r)
-		}
-	}()
-
 	projectExist, err := usecase.ProjectRepo.GetProjectById(ctx, usecase.DB.Mysql, id)
 
 	if err != nil {
-		panic(err)
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", err.Error()))
 	}
 
 	if (model.Project{}) == projectExist {
@@ -316,7 +290,7 @@ func (usecase *UsecaseImpl) DeleteProject(ctx context.Context, id int) response.
 	isDeleteSuccess := usecase.ProjectRepo.DeleteProject(ctx, usecase.DB.Mysql, id)
 
 	if !isDeleteSuccess {
-		panic("failed delete project: unknown error")
+		panic(exception.NewCommonException(http.StatusInternalServerError, "99", "failed delete project: unknown error"))
 	}
 
 	commonRs = commonRs.SetSuccess("success delete project")

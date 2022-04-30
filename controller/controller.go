@@ -2,6 +2,8 @@ package controller
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/mFsl16/clockify-clone/exception"
 	"github.com/mFsl16/clockify-clone/model/request"
 	"github.com/mFsl16/clockify-clone/usecase"
 	"github.com/sirupsen/logrus"
@@ -34,8 +36,8 @@ func NewController(e *echo.Echo, usecase usecase.Usecase) *Controller {
 		U: usecase,
 	}
 
-	//controller.E.Use(middleware.Recover())
-
+	controller.E.Use(middleware.Recover())
+	controller.E.HTTPErrorHandler = exception.CustomHttpErrorHandler
 	return &controller
 }
 
